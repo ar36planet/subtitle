@@ -1,0 +1,5 @@
+mlx-whisper
+pysubs2
+transformers
+sentencepiece
+ollama
