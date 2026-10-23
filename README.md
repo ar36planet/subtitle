@@ -65,6 +65,18 @@ python3 transcriber.py
 4. 按「翻譯全部」，完成後可直接在欄位裡修改
 5. 確認後按「匯出 SRT」
 
+## 在 Colab 上執行
+
+沒有 Apple Silicon Mac 也可以用 Google Colab 的免費 GPU 做語音辨識（faster-whisper）：
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ar36planet/subtitle/blob/main/colab_transcribe.ipynb)
+
+1. 「執行階段 → 變更執行階段類型」選 **T4 GPU**
+2. 依序執行三個區塊：安裝套件 → 掛載雲端硬碟（選用）→ 語音辨識
+3. 「來源」留空會跳出上傳視窗；也可填檔案路徑、資料夾、`.txt` 清單或 YouTube 網址
+
+> 請在本機修改 notebook 後 commit，Colab 只用來執行。若要從 Colab 存回 GitHub，記得取消勾選「包含儲存格輸出」。
+
 ## 模型說明
 
 ### 語音辨識模型
