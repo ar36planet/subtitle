@@ -72,8 +72,9 @@ python3 transcriber.py
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ar36planet/subtitle/blob/main/colab_transcribe.ipynb)
 
 1. 「執行階段 → 變更執行階段類型」選 **T4 GPU**
-2. 依序執行三個區塊：安裝套件 → 掛載雲端硬碟（選用）→ 語音辨識
+2. 依序執行：安裝套件 → 掛載雲端硬碟（選用）→ 語音辨識
 3. 「來源」留空會跳出上傳視窗；也可填檔案路徑、資料夾、`.txt` 清單或 YouTube 網址
+4. 字幕翻譯（區塊 4）：上傳中文 `.srt`，用 Ollama（gemma4 / qwen2.5）或 Helsinki 翻成英文或中英雙語字幕
 
 > 請在本機修改 notebook 後 commit，Colab 只用來執行。若要從 Colab 存回 GitHub，記得取消勾選「包含儲存格輸出」。
 
