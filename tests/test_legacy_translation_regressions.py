@@ -118,7 +118,8 @@ class NotebookRegressions(unittest.TestCase):
                                  {'message': {'content': '2: B'}}])
         with patch.dict(sys.modules, ollama=SimpleNamespace(chat=chat)), redirect_stdout(io.StringIO()) as output:
             actual = self.ns['make_llm_translator']('fake')(SOURCE)
-        self.assertEqual(actual, ['A', 'B', SOURCE[2]])
+        # An out-of-range number now invalidates the batch, so cue 1 fails explicitly instead of trusting it.
+        self.assertEqual(actual, [SOURCE[0] + ' [TRANSLATION_FAILED]', 'B', SOURCE[2] + ' [TRANSLATION_FAILED]'])
         self.assertEqual(chat.call_count, 2)
         self.assertIn('保留原文', output.getvalue())
         chat.side_effect = RuntimeError('fictional offline failure')
@@ -175,10 +176,9 @@ class NotebookRegressions(unittest.TestCase):
                 expected = ENGLISH if style == '英文' else [f'{s}\n{e}' for s, e in zip(originals, ENGLISH)]
                 self.assertEqual([e.plaintext for e in result], expected)
 
-    def test_known_defect_duplicate_number_silently_overwrites(self):
-        # Characterization only: this is NOT evidence of correct alignment.
-        self.assertEqual(self.ns['parse_numbered']('1: First\n1: Overwritten'),
-                         {0: 'Overwritten'})
+    def test_duplicate_number_rejects_the_batch(self):
+        # Fixed by legacy-translation-regressions rev 2: duplicates no longer overwrite.
+        self.assertEqual(self.ns['parse_numbered']('1: First\n1: Overwritten'), {})
 
     def test_notebook_main_reports_failure_without_output(self):
         with tempfile.TemporaryDirectory() as d:
@@ -256,7 +256,7 @@ class GuiRegressions(unittest.TestCase):
         tokenizer.assert_called_with([e.text.strip() for e, _ in self.rows],
                                      return_tensors='pt', padding=True, truncation=True, max_length=512)
 
-    def test_known_defect_gui_export_omits_untranslated_rows(self):
+    def test_gui_export_marks_untranslated_rows(self):
         with tempfile.TemporaryDirectory() as d:
             output = str(Path(d) / 'partial.srt')
             for (_, var), text in zip(self.rows, [ENGLISH[0], '', ENGLISH[2]]):
@@ -264,9 +264,10 @@ class GuiRegressions(unittest.TestCase):
             with patch.object(self.module.filedialog, 'asksaveasfilename', return_value=output), patch.object(self.module.messagebox, 'showinfo'):
                 self.module.App._export_srt(self.app)
             result = pysubs2.load(output)
-            # Explicit reproduction of a base defect, not the desired goal behavior.
-            self.assertEqual([e.plaintext for e in result], [ENGLISH[0], ENGLISH[2]])
-            self.assertEqual([(e.start, e.end) for e in result], [TIMES[0], TIMES[2]])
+            # Fixed by legacy-translation-regressions rev 2: every row is kept with its timing.
+            self.assertEqual([e.plaintext for e in result],
+                             [ENGLISH[0], f'{self.rows[1][0].text} [TRANSLATION_FAILED]', ENGLISH[2]])
+            self.assertEqual([(e.start, e.end) for e in result], [TIMES[0], TIMES[1], TIMES[2]])
 
     def test_gui_import_and_export_srt(self):
         with tempfile.TemporaryDirectory() as d:
