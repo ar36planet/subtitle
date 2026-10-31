@@ -393,19 +393,23 @@ class App(tk.Tk):
                     state='normal', text='翻譯全部'))
                 return
 
-            # 解析 "N: 翻譯文字"
+            # Validate the complete batch before assigning any translation.
+            parsed = {}
+            duplicate = False
             for line_str in raw.splitlines():
                 m = re.match(r'^(\d+)\s*[:：]\s*(.+)', line_str.strip())
                 if m:
                     idx = int(m.group(1)) - 1
-                    if 0 <= idx < total:
-                        translated[idx] = m.group(2).strip()
+                    if idx in parsed:
+                        duplicate = True
+                    parsed[idx] = m.group(2).strip()
+            if duplicate or any(i < start or i >= end for i in parsed):
+                parsed = {}
 
-            # 即時填入已完成的那批
-            for j, (_, var) in enumerate(chunk):
-                t = translated[start + j]
-                if t:
-                    self.after(0, lambda v=var, txt=t: v.set(txt))
+            for j, (line, var) in enumerate(chunk):
+                t = parsed.get(start + j) or f'{line.text} [TRANSLATION_FAILED]'
+                translated[start + j] = t
+                self.after(0, lambda v=var, txt=t: v.set(txt))
 
         self.after(0, lambda: self.trans_status.set(
             f'完成（{model_id}），共 {total} 句，請確認後點「匯出 SRT」'))
@@ -480,9 +484,10 @@ class App(tk.Tk):
             subs = pysubs2.SSAFile()
             for line, var in self._trans_rows:
                 txt = var.get().strip()
-                if txt:
-                    subs.append(pysubs2.SSAEvent(
-                        start=line.start, end=line.end, text=txt))
+                if not txt:
+                    txt = f'{line.text} [TRANSLATION_FAILED]'
+                subs.append(pysubs2.SSAEvent(
+                    start=line.start, end=line.end, text=txt))
             subs.save(path, encoding='utf-8')
             messagebox.showinfo('完成', f'已儲存至：\n{path}')
         except Exception as e:
